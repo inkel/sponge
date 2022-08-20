@@ -23,6 +23,34 @@ func main() {
 }
 
 func realMain(in io.Reader, outname string) error {
+	buf, err := read(in)
+	if err != nil {
+		return err
+	}
+
+	var out io.Writer
+
+	if outname == "" {
+		out = os.Stdout
+	} else {
+		fp, err := os.Create(outname)
+		if err != nil {
+			return fmt.Errorf("opening output file: %w", err)
+		}
+		defer fp.Close()
+
+		out = fp
+	}
+
+	_, err = out.Write(buf)
+	if err != nil {
+		return fmt.Errorf("writing buffer to output file: %w", err)
+	}
+
+	return nil
+}
+
+func read(in io.Reader) ([]byte, error) {
 	var buf []byte
 
 	var total int
@@ -33,7 +61,7 @@ func realMain(in io.Reader, outname string) error {
 		if errors.Is(err, io.EOF) {
 			break
 		} else if err != nil {
-			return fmt.Errorf("reading from stdin: %w", err)
+			return nil, fmt.Errorf("reading from stdin: %w", err)
 		}
 
 		total += n
@@ -41,22 +69,5 @@ func realMain(in io.Reader, outname string) error {
 		buf = append(buf, b...)
 	}
 
-	buf = buf[:total]
-
-	if outname == "" {
-		_, err := os.Stdout.Write(buf)
-		return err
-	}
-
-	fp, err := os.Create(outname)
-	if err != nil {
-		return fmt.Errorf("opening output file: %w", err)
-	}
-
-	_, err = fp.Write(buf)
-	if err != nil {
-		return fmt.Errorf("writing buffer to output file: %w", err)
-	}
-
-	return nil
+	return buf[:total], nil
 }
